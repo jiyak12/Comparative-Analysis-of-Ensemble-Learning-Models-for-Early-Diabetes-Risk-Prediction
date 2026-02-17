@@ -2,30 +2,53 @@ import streamlit as st
 import joblib
 import numpy as np
 
+# Page config
+st.set_page_config(page_title="Diabetes Risk Predictor", page_icon="🩺", layout="centered")
+
 # Load model
 model = joblib.load("diabetes_model.pkl")
 
-st.title("Diabetes Risk Prediction App")
+# Header
+st.title("🩺 Diabetes Risk Prediction System")
+st.markdown("Predict the probability of diabetes using medical parameters.")
 
-st.write("Enter medical details below:")
+st.markdown("---")
 
-pregnancies = st.number_input("Pregnancies", 0, 20)
-glucose = st.number_input("Glucose Level", 0, 200)
-blood_pressure = st.number_input("Blood Pressure", 0, 150)
-skin_thickness = st.number_input("Skin Thickness", 0, 100)
-insulin = st.number_input("Insulin", 0, 900)
-bmi = st.number_input("BMI", 0.0, 70.0)
-dpf = st.number_input("Diabetes Pedigree Function", 0.0, 3.0)
-age = st.number_input("Age", 1, 120)
+# Sidebar inputs
+st.sidebar.header("Enter Patient Details")
 
-if st.button("Predict"):
+pregnancies = st.sidebar.slider("Pregnancies", 0, 20, 1)
+glucose = st.sidebar.slider("Glucose Level", 0, 200, 100)
+blood_pressure = st.sidebar.slider("Blood Pressure", 0, 150, 70)
+skin_thickness = st.sidebar.slider("Skin Thickness", 0, 100, 20)
+insulin = st.sidebar.slider("Insulin", 0, 900, 80)
+bmi = st.sidebar.slider("BMI", 0.0, 70.0, 25.0)
+dpf = st.sidebar.slider("Diabetes Pedigree Function", 0.0, 3.0, 0.5)
+age = st.sidebar.slider("Age", 1, 120, 30)
+
+# Prediction button
+if st.button("🔍 Predict Risk"):
+
     input_data = np.array([[pregnancies, glucose, blood_pressure,
                             skin_thickness, insulin, bmi, dpf, age]])
 
     prediction = model.predict(input_data)
     probability = model.predict_proba(input_data)[0][1]
 
-    if prediction[0] == 1:
-        st.error(f"High Risk of Diabetes ({probability*100:.2f}%)")
+    st.markdown("## 📊 Prediction Result")
+
+    # Progress bar
+    st.progress(int(probability * 100))
+
+    # Risk interpretation
+    if probability < 0.30:
+        st.success(f"🟢 Low Risk ({probability*100:.2f}%)")
+    elif probability < 0.70:
+        st.warning(f"🟡 Moderate Risk ({probability*100:.2f}%)")
     else:
-        st.success(f"Low Risk of Diabetes ({probability*100:.2f}%)")
+        st.error(f"🔴 High Risk ({probability*100:.2f}%)")
+
+# Footer
+st.markdown("---")
+st.caption("⚠️ Disclaimer: This application is for educational purposes only "
+           "and should not replace professional medical consultation.")

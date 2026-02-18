@@ -1,78 +1,54 @@
 import streamlit as st
-import numpy as np
-import pandas as pd
 import joblib
+import numpy as np
 
-# Load saved model & threshold
-pipeline = joblib.load("gbm_pipeline.pkl")
-optimal_threshold = joblib.load("gbm_threshold.pkl")
+# Page config
+st.set_page_config(page_title="Diabetes Risk Predictor", page_icon="🩺", layout="centered")
 
-st.set_page_config(
-    page_title="Diabetes Risk Prediction",
-    page_icon="🩺",
-    layout="wide"
-)
+# Load model
+model = joblib.load("diabetes_model.pkl")
 
-# Sidebar Inputs
-st.sidebar.title("📝 Patient Details")
+# Header
+st.title("🩺 Diabetes Risk Prediction System")
+st.markdown("Predict the probability of diabetes using medical parameters.")
+
+st.markdown("---")
+
+# Sidebar inputs
+st.sidebar.header("Enter Patient Details")
 
 pregnancies = st.sidebar.slider("Pregnancies", 0, 20, 1)
-glucose = st.sidebar.slider("Glucose Level", 0, 300, 120)
-blood_pressure = st.sidebar.slider("Blood Pressure", 0, 200, 70)
+glucose = st.sidebar.slider("Glucose Level", 0, 200, 100)
+blood_pressure = st.sidebar.slider("Blood Pressure", 0, 150, 70)
 skin_thickness = st.sidebar.slider("Skin Thickness", 0, 100, 20)
 insulin = st.sidebar.slider("Insulin", 0, 900, 80)
 bmi = st.sidebar.slider("BMI", 0.0, 70.0, 25.0)
-dpf = st.sidebar.slider("Diabetes Pedigree Function", 0.0, 2.5, 0.5)
-age = st.sidebar.slider("Age", 0, 100, 30)
+dpf = st.sidebar.slider("Diabetes Pedigree Function", 0.0, 3.0, 0.5)
+age = st.sidebar.slider("Age", 1, 120, 30)
 
-# Main Area
-st.title("🩺 Diabetes Risk Prediction System")
-st.write("Predict diabetes probability using medical parameters.")
-st.markdown("---")
-
+# Prediction button
 if st.button("🔍 Predict Risk"):
 
-    try:
-        input_data = pd.DataFrame([{
-            "pregnancies": pregnancies,
-            "glucose": glucose,
-            "blood_pressure": blood_pressure,
-            "skin_thickness": skin_thickness,
-            "insulin": insulin,
-            "bmi": bmi,
-            "diabetes_pedigree_function": dpf,
-            "age": age
-        }])
+    input_data = np.array([[pregnancies, glucose, blood_pressure,
+                            skin_thickness, insulin, bmi, dpf, age]])
 
-        prob = pipeline.predict_proba(input_data)[0][1]
-        percentage = prob * 100
+    prediction = model.predict(input_data)
+    probability = model.predict_proba(input_data)[0][1]
 
-        if prob < optimal_threshold:
-            risk_label = "Low Risk"
-            color = "green"
-        else:
-            risk_label = "High Risk"
-            color = "red"
+    st.markdown("## 📊 Prediction Result")
 
-        st.subheader("Prediction Result")
-        st.progress(int(percentage))
+    # Progress bar
+    st.progress(int(probability * 100))
 
-        st.markdown(
-            f"""
-            <div style='padding:20px;
-                        border-radius:10px;
-                        background-color:{color};
-                        color:white;
-                        font-size:20px;
-                        text-align:center'>
-                {risk_label} ({percentage:.2f}% Probability)
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    # Risk interpretation
+    if probability < 0.30:
+        st.success(f"🟢 Low Risk ({probability*100:.2f}%)")
+    elif probability < 0.70:
+        st.warning(f"🟡 Moderate Risk ({probability*100:.2f}%)")
+    else:
+        st.error(f"🔴 High Risk ({probability*100:.2f}%)")
 
-    except Exception as e:
-        st.error(f"Error occurred: {e}")
-
+# Footer
 st.markdown("---")
-st.caption("⚠ Educational use only. Not medical advice.")
+st.caption("⚠️ Disclaimer: This application is for educational purposes only "
+           "and should not replace professional medical consultation.")
